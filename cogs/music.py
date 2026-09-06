@@ -287,7 +287,7 @@ class Music(commands.Cog):
                 player.voice = await channel.connect()
 
             await ctx.send(
-                f"🔊 **{channel.name}** に参加しました。"
+                f" **{channel.name}** に参加しました。"
             )
 
         except Exception:
@@ -362,7 +362,7 @@ class Music(commands.Cog):
                 )
 
         await ctx.send(
-            "🔎 音源を検索しています..."
+            "音源を検索しています..."
         )
 
         song = await player.extract(query)
@@ -370,7 +370,7 @@ class Music(commands.Cog):
         if song is None:
 
             await ctx.send(
-                "❌ 音源を取得できませんでした。"
+                "音源を取得できませんでした。"
             )
 
             return
@@ -378,7 +378,7 @@ class Music(commands.Cog):
         player.add(song)
 
         await ctx.send(
-            f"🎵 **{song.title}** をキューに追加しました。"
+            f"**{song.title}** をキューに追加しました。"
         )
 
         if not player.voice.is_playing():
@@ -412,7 +412,7 @@ class Music(commands.Cog):
             voice.pause()
 
             await ctx.send(
-                "⏸️ 一時停止しました。"
+                "一時停止しました。"
             )
 
         else:
@@ -448,7 +448,7 @@ class Music(commands.Cog):
             voice.resume()
 
             await ctx.send(
-                "▶️ 再生を再開しました。"
+                "再生を再開しました。"
             )
 
         else:
@@ -484,7 +484,7 @@ class Music(commands.Cog):
             voice.stop()
 
             await ctx.send(
-                "⏭️ スキップしました。"
+                "スキップしました。"
             )
 
         else:
@@ -513,7 +513,7 @@ class Music(commands.Cog):
         player.stop()
 
         await ctx.send(
-            "⏹️ 再生を停止してキューを削除しました。"
+            "再生を停止してキューを削除しました。"
         )
 
 
@@ -554,7 +554,7 @@ class Music(commands.Cog):
         text = "\n".join(lines)
 
         await ctx.send(
-            "🎶 **再生キュー**\n" + text
+            "**再生キュー**\n" + text
         )
 
 
@@ -582,7 +582,7 @@ class Music(commands.Cog):
             return
 
         await ctx.send(
-            f"🎵 **現在再生中**\n"
+            f"**現在再生中**\n"
             f"{player.current.title}"
         )
 
@@ -620,7 +620,7 @@ class Music(commands.Cog):
         player.voice = None
 
         await ctx.send(
-            "👋 VCから退出しました。"
+            "VCから退出しました。"
         )
 
 
