@@ -9,7 +9,6 @@ import discord
 from discord.ext import commands
 import yt_dlp
 
-
 logger = logging.getLogger("bot.music")
 
 
@@ -28,9 +27,7 @@ YTDL_OPTIONS = {
 
 FFMPEG_OPTIONS = {
     "before_options": (
-        "-reconnect 1 "
-        "-reconnect_streamed 1 "
-        "-reconnect_delay_max 5"
+        "-reconnect 1 " "-reconnect_streamed 1 " "-reconnect_delay_max 5"
     ),
     "options": "-vn",
 }
@@ -39,6 +36,7 @@ FFMPEG_OPTIONS = {
 # ------------------------------------------------------------
 # 再生データ
 # ------------------------------------------------------------
+
 
 @dataclass
 class Song:
@@ -50,6 +48,7 @@ class Song:
 # ------------------------------------------------------------
 # VCごとのプレイヤー
 # ------------------------------------------------------------
+
 
 class MusicPlayer:
 
@@ -66,7 +65,6 @@ class MusicPlayer:
         self.loop = False
 
         self.play_lock = asyncio.Lock()
-
 
     # --------------------------------------------------------
     # yt-dlpで音源情報を取得
@@ -101,14 +99,11 @@ class MusicPlayer:
                     )
 
             except Exception:
-                logger.exception(
-                    "yt-dlpで音源取得に失敗しました"
-                )
+                logger.exception("yt-dlpで音源取得に失敗しました")
 
                 return None
 
         return await asyncio.to_thread(_extract)
-
 
     # --------------------------------------------------------
     # 再生
@@ -174,14 +169,9 @@ class MusicPlayer:
 
             except Exception:
 
-                logger.exception(
-                    "音声再生に失敗しました"
-                )
+                logger.exception("音声再生に失敗しました")
 
-                asyncio.create_task(
-                    self.play_next()
-                )
-
+                asyncio.create_task(self.play_next())
 
     # --------------------------------------------------------
     # 停止
@@ -194,7 +184,6 @@ class MusicPlayer:
             if self.voice.is_playing():
                 self.voice.stop()
 
-
     # --------------------------------------------------------
     # キュー追加
     # --------------------------------------------------------
@@ -202,7 +191,6 @@ class MusicPlayer:
     def add(self, song: Song):
 
         self.queue.append(song)
-
 
     # --------------------------------------------------------
     # キュー削除
@@ -217,6 +205,7 @@ class MusicPlayer:
 # Cog
 # ------------------------------------------------------------
 
+
 class Music(commands.Cog):
     """yt-dlpを使用したVC音楽再生Cog"""
 
@@ -226,7 +215,6 @@ class Music(commands.Cog):
 
         # guild_id -> MusicPlayer
         self.players: dict[int, MusicPlayer] = {}
-
 
     # --------------------------------------------------------
     # Player取得
@@ -246,7 +234,6 @@ class Music(commands.Cog):
 
         return self.players[guild_id]
 
-
     # --------------------------------------------------------
     # VC参加
     # --------------------------------------------------------
@@ -260,17 +247,13 @@ class Music(commands.Cog):
 
         if ctx.author.voice is None:
 
-            await ctx.send(
-                "先にボイスチャンネルへ参加してください。"
-            )
+            await ctx.send("先にボイスチャンネルへ参加してください。")
 
             return
 
         channel = ctx.author.voice.channel
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         try:
 
@@ -278,28 +261,19 @@ class Music(commands.Cog):
 
                 if ctx.voice_client.channel != channel:
 
-                    await ctx.voice_client.move_to(
-                        channel
-                    )
+                    await ctx.voice_client.move_to(channel)
 
             else:
 
                 player.voice = await channel.connect()
 
-            await ctx.send(
-                f" **{channel.name}** に参加しました。"
-            )
+            await ctx.send(f" **{channel.name}** に参加しました。")
 
         except Exception:
 
-            logger.exception(
-                "VC参加に失敗しました"
-            )
+            logger.exception("VC参加に失敗しました")
 
-            await ctx.send(
-                "VCへの参加に失敗しました。"
-            )
-
+            await ctx.send("VCへの参加に失敗しました。")
 
     # --------------------------------------------------------
     # 再生
@@ -316,34 +290,24 @@ class Music(commands.Cog):
 
         if ctx.author.voice is None:
 
-            await ctx.send(
-                "先にボイスチャンネルへ参加してください。"
-            )
+            await ctx.send("先にボイスチャンネルへ参加してください。")
 
             return
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         # VCにいなければ自動参加
         if ctx.voice_client is None:
 
             try:
 
-                player.voice = await (
-                    ctx.author.voice.channel.connect()
-                )
+                player.voice = await ctx.author.voice.channel.connect()
 
             except Exception:
 
-                logger.exception(
-                    "VC接続失敗"
-                )
+                logger.exception("VC接続失敗")
 
-                await ctx.send(
-                    "VCへの接続に失敗しました。"
-                )
+                await ctx.send("VCへの接続に失敗しました。")
 
                 return
 
@@ -352,39 +316,27 @@ class Music(commands.Cog):
             player.voice = ctx.voice_client
 
             # 別VCなら移動
-            if (
-                player.voice.channel
-                != ctx.author.voice.channel
-            ):
+            if player.voice.channel != ctx.author.voice.channel:
 
-                await player.voice.move_to(
-                    ctx.author.voice.channel
-                )
+                await player.voice.move_to(ctx.author.voice.channel)
 
-        await ctx.send(
-            "音源を検索しています..."
-        )
+        await ctx.send("音源を検索しています...")
 
         song = await player.extract(query)
 
         if song is None:
 
-            await ctx.send(
-                "音源を取得できませんでした。"
-            )
+            await ctx.send("音源を取得できませんでした。")
 
             return
 
         player.add(song)
 
-        await ctx.send(
-            f"**{song.title}** をキューに追加しました。"
-        )
+        await ctx.send(f"**{song.title}** をキューに追加しました。")
 
         if not player.voice.is_playing():
 
             await player.play_next()
-
 
     # --------------------------------------------------------
     # Pause
@@ -401,9 +353,7 @@ class Music(commands.Cog):
 
         if voice is None:
 
-            await ctx.send(
-                "VCに接続していません。"
-            )
+            await ctx.send("VCに接続していません。")
 
             return
 
@@ -411,16 +361,11 @@ class Music(commands.Cog):
 
             voice.pause()
 
-            await ctx.send(
-                "一時停止しました。"
-            )
+            await ctx.send("一時停止しました。")
 
         else:
 
-            await ctx.send(
-                "現在再生していません。"
-            )
-
+            await ctx.send("現在再生していません。")
 
     # --------------------------------------------------------
     # Resume
@@ -437,9 +382,7 @@ class Music(commands.Cog):
 
         if voice is None:
 
-            await ctx.send(
-                "VCに接続していません。"
-            )
+            await ctx.send("VCに接続していません。")
 
             return
 
@@ -447,16 +390,11 @@ class Music(commands.Cog):
 
             voice.resume()
 
-            await ctx.send(
-                "再生を再開しました。"
-            )
+            await ctx.send("再生を再開しました。")
 
         else:
 
-            await ctx.send(
-                "一時停止されていません。"
-            )
-
+            await ctx.send("一時停止されていません。")
 
     # --------------------------------------------------------
     # Skip
@@ -473,9 +411,7 @@ class Music(commands.Cog):
 
         if voice is None:
 
-            await ctx.send(
-                "VCに接続していません。"
-            )
+            await ctx.send("VCに接続していません。")
 
             return
 
@@ -483,16 +419,11 @@ class Music(commands.Cog):
 
             voice.stop()
 
-            await ctx.send(
-                "スキップしました。"
-            )
+            await ctx.send("スキップしました。")
 
         else:
 
-            await ctx.send(
-                "現在再生していません。"
-            )
-
+            await ctx.send("現在再生していません。")
 
     # --------------------------------------------------------
     # Stop
@@ -505,17 +436,12 @@ class Music(commands.Cog):
         ctx: commands.Context,
     ):
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         player.clear()
         player.stop()
 
-        await ctx.send(
-            "再生を停止してキューを削除しました。"
-        )
-
+        await ctx.send("再生を停止してキューを削除しました。")
 
     # --------------------------------------------------------
     # Queue
@@ -528,15 +454,11 @@ class Music(commands.Cog):
         ctx: commands.Context,
     ):
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         if not player.queue:
 
-            await ctx.send(
-                "キューは空です。"
-            )
+            await ctx.send("キューは空です。")
 
             return
 
@@ -547,16 +469,11 @@ class Music(commands.Cog):
             start=1,
         ):
 
-            lines.append(
-                f"`{i}.` {song.title}"
-            )
+            lines.append(f"`{i}.` {song.title}")
 
         text = "\n".join(lines)
 
-        await ctx.send(
-            "**再生キュー**\n" + text
-        )
-
+        await ctx.send("**再生キュー**\n" + text)
 
     # --------------------------------------------------------
     # Now Playing
@@ -569,23 +486,15 @@ class Music(commands.Cog):
         ctx: commands.Context,
     ):
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         if player.current is None:
 
-            await ctx.send(
-                "現在何も再生していません。"
-            )
+            await ctx.send("現在何も再生していません。")
 
             return
 
-        await ctx.send(
-            f"**現在再生中**\n"
-            f"{player.current.title}"
-        )
-
+        await ctx.send(f"**現在再生中**\n" f"{player.current.title}")
 
     # --------------------------------------------------------
     # Leave
@@ -602,15 +511,11 @@ class Music(commands.Cog):
 
         if voice is None:
 
-            await ctx.send(
-                "VCに接続していません。"
-            )
+            await ctx.send("VCに接続していません。")
 
             return
 
-        player = self.get_player(
-            ctx.guild.id
-        )
+        player = self.get_player(ctx.guild.id)
 
         player.clear()
         player.current = None
@@ -619,10 +524,7 @@ class Music(commands.Cog):
 
         player.voice = None
 
-        await ctx.send(
-            "VCから退出しました。"
-        )
-
+        await ctx.send("VCから退出しました。")
 
     # --------------------------------------------------------
     # エラーハンドリング
@@ -640,9 +542,7 @@ class Music(commands.Cog):
             commands.MissingRequiredArgument,
         ):
 
-            await ctx.send(
-                "使い方: `!play URLまたは検索ワード`"
-            )
+            await ctx.send("使い方: `!play URLまたは検索ワード`")
 
         else:
 
@@ -651,19 +551,16 @@ class Music(commands.Cog):
                 exc_info=error,
             )
 
-            await ctx.send(
-                "再生中にエラーが発生しました。"
-            )
+            await ctx.send("再生中にエラーが発生しました。")
 
 
 # ------------------------------------------------------------
 # setup
 # ------------------------------------------------------------
 
+
 async def setup(
     bot: commands.Bot,
 ):
 
-    await bot.add_cog(
-        Music(bot)
-    )
+    await bot.add_cog(Music(bot))
