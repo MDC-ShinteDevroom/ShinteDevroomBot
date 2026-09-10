@@ -14,7 +14,7 @@ COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", "!")
 COGS_DIR = Path(__file__).parent / "cogs"
 
 # 管理者権限チェックの対象外にする（誰でも実行可能な）コマンド名
-PUBLIC_COMMANDS = {"gr3nja"}
+PUBLIC_COMMANDS = {"gr3nja","join","play","pause","skip","resume","leave","stop","queue","nowplaying"}
 
 # ログ設定
 logging.basicConfig(

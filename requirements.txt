@@ -1,2 +1,5 @@
 discord.py>=2.4.0
 python-dotenv>=1.0.0
+yt-dlp
+PyNaCl
+davey
