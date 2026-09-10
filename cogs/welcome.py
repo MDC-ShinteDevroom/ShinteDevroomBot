@@ -68,38 +68,43 @@ class Welcome(commands.Cog):
         else:
             raise error
 
+    async def _send_log(self, guild: discord.Guild, message: str):
+        channel = self._get_channel(guild)
+        if channel is None:
+            return
+
+        try:
+            await channel.send(message)
+        except discord.Forbidden:
+            logger.warning(f"チャンネル {channel.id} への送信権限がありません")
+
     # ---------------- リスナー ----------------
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
-        channel = self._get_channel(member.guild)
-        if channel is None:
-            return
-        try:
-            await channel.send(f"{member.mention} が参加しました")
-        except discord.Forbidden:
-            logger.warning(f"チャンネル {channel.id} への送信権限がありません")
+        await self._send_log(
+            member.guild,
+            f"{member.mention} が参加しました",
+        )
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
-        channel = self._get_channel(member.guild)
-        if channel is None:
-            return
-        try:
-            await channel.send(f"{member.mention} が脱退しました")
-        except discord.Forbidden:
-            logger.warning(f"チャンネル {channel.id} への送信権限がありません")
+        await self._send_log(
+            member.guild,
+            f"{member.mention} が脱退しました",
+        )
 
     @commands.Cog.listener()
-    async def on_member_update(self, before: discord.Member, after: discord.Member):
+    async def on_member_update(
+        self,
+        before: discord.Member,
+        after: discord.Member,
+    ):
         # premium_since が None → 値ありに変化した場合、サーバーブーストを開始したと判定
         if before.premium_since is None and after.premium_since is not None:
-            channel = self._get_channel(after.guild)
-            if channel is None:
-                return
-            try:
-                await channel.send(f"{after.mention} がサーバーをブーストしました")
-            except discord.Forbidden:
-                logger.warning(f"チャンネル {channel.id} への送信権限がありません")
+            await self._send_log(
+                after.guild,
+                f"{after.mention} がサーバーをブーストしました",
+            )
 
 
 async def setup(bot: commands.Bot):
