@@ -168,8 +168,7 @@ class Greet(commands.Cog):
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def greetchannel(self, ctx: commands.Context):
-        channel = ctx.channel
-        await self._repost_button(channel)
+        await self._repost_button(ctx.channel)
 
     @greetchannel.error
     async def greetchannel_error(self, ctx: commands.Context, error):
