@@ -68,12 +68,12 @@ class MyBot(commands.Bot):
         # スラッシュコマンドを同期する場合はここで実行
         # 特定サーバーのみ即時反映したい場合は guild=discord.Object(id=...) を指定
         synced = await self.tree.sync()
-        logger.info(f"スラッシュコマンドを {len(synced)} 件同期しました")
+        logger.info("スラッシュコマンドを %s 件同期しました", len(synced))
 
     async def load_all_cogs(self):
         """cogs/ ディレクトリ以下の *.py を自動読み込みする"""
-        if not COGS_DIR.exists():
-            logger.warning(f"Cogs ディレクトリが見つかりません: {COGS_DIR}")
+        if not COGS_DIR.is_dir():
+            logger.warning("Cogs ディレクトリが見つかりません: %s", COGS_DIR)
             return
 
         for path in COGS_DIR.rglob("*.py"):
@@ -91,8 +91,8 @@ class MyBot(commands.Bot):
                 logger.error(f"Cog の読み込みに失敗しました: {extension} -> {e}")
 
     async def on_ready(self):
-        logger.info(f"ログインしました: {self.user} (ID: {self.user.id})")
-        logger.info(f"接続サーバー数: {len(self.guilds)}")
+        logger.info("ログインしました: %s (ID: %s)", self.user, self.user.id)
+        logger.info("接続サーバー数: %s", len(self.guilds))
         await self.change_presence(
             activity=discord.Game(name=f"{COMMAND_PREFIX}help で使い方を確認")
         )
@@ -130,9 +130,19 @@ async def reload_cog(ctx, extension: str):
 @commands.is_owner()
 async def reload_all(ctx):
     """すべての Cog をリロードする"""
+    failed = []
+
     for extension in list(bot.extensions.keys()):
-        await bot.reload_extension(extension)
-    await ctx.send("すべての Cog をリロードしました。")
+        try:
+            await bot.reload_extension(extension)
+        except Exception as e:
+            failed.append((extension, e))
+
+    if failed:
+        errors = "\n".join(f"- `{extension}`: `{error}`" for extension, error in failed)
+        await ctx.send(f"一部の Cog のリロードに失敗しました。\n{errors}")
+    else:
+        await ctx.send("すべての Cog をリロードしました。")
 
 
 async def main():
