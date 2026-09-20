@@ -22,8 +22,9 @@ class RandomPhoto(commands.Cog):
     @commands.command(name="gr3nja")
     async def gr3nja(self, ctx: commands.Context):
         """photo/ に保存されたPNGファイルをランダムで送信する（誰でも実行可能）"""
-        if not PHOTO_DIR.exists():
-            await ctx.send("photo/ ディレクトリが見つかりません。")
+        if not PHOTO_DIR.is_dir():
+            logger.warning("画像ディレクトリが見つかりません: %s", PHOTO_DIR)
+            await ctx.send("画像を送信できませんでした。")
             return
 
         png_files = [
@@ -31,7 +32,8 @@ class RandomPhoto(commands.Cog):
         ]
 
         if not png_files:
-            await ctx.send("photo/ にPNGファイルが見つかりません。")
+            logger.warning("photo/ にPNGファイルが見つかりません")
+            await ctx.send("送信できる画像がありません。")
             return
 
         chosen = random.choice(png_files)
@@ -39,7 +41,7 @@ class RandomPhoto(commands.Cog):
         try:
             await ctx.send(file=discord.File(chosen))
         except discord.HTTPException:
-            logger.exception(f"画像の送信に失敗しました: {chosen}")
+            logger.exception("画像の送信に失敗しました: %s", chosen)
             await ctx.send("画像の送信に失敗しました。")
 
 
