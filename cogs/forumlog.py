@@ -10,8 +10,8 @@ logger = logging.getLogger("bot.forumlog")
 # json作る。
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "forumlog.json"
 
-class ForumLog(commands.Cog):
 
+class ForumLog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -35,7 +35,6 @@ class ForumLog(commands.Cog):
         return self.config.setdefault(
             str(guild_id), {"log_channel": None, "forums": []}
         )
-
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread: discord.Thread):
@@ -86,8 +85,8 @@ class ForumLog(commands.Cog):
         except discord.Forbidden:
             logger.warning(f"通知先チャンネルへの送信権限がありません: {channel_id}")
 
-  # うんこ
-  
+    # うんこ
+
     @commands.group(name="forumlog", invoke_without_command=True)
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
@@ -96,7 +95,7 @@ class ForumLog(commands.Cog):
 
     @forumlog.command(name="set")
     async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel):
-      
+
         self._conf(ctx.guild.id)["log_channel"] = channel.id
         self._save()
         await ctx.send(f"通知先を {channel.mention} に設定しました。")
@@ -128,7 +127,9 @@ class ForumLog(commands.Cog):
         """現在の設定を表示する"""
         conf = self.config.get(str(ctx.guild.id))
         if not conf:
-            await ctx.send("まだ設定されていません。`!forumlog set #チャンネル` から設定してください。")
+            await ctx.send(
+                "まだ設定されていません。`!forumlog set #チャンネル` から設定してください。"
+            )
             return
 
         ch = f"<#{conf['log_channel']}>" if conf.get("log_channel") else "未設定"
