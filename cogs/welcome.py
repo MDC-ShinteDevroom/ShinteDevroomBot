@@ -7,6 +7,8 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
+from utils.json_store import load_id_map, save_id_map
+
 logger = logging.getLogger("bot.welcome")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -24,25 +26,10 @@ class Welcome(commands.Cog):
 
     # ---------------- データ永続化 ----------------
     def _load_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        if DATA_FILE.exists():
-            try:
-                raw = json.loads(DATA_FILE.read_text(encoding="utf-8"))
-                self.welcome_channels = {int(k): int(v) for k, v in raw.items()}
-            except Exception:
-                logger.exception("welcome_channels.json の読み込みに失敗しました")
-                self.welcome_channels = {}
+        self.welcome_channels = load_id_map(DATA_FILE)
 
     def _save_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        DATA_FILE.write_text(
-            json.dumps(
-                {str(k): v for k, v in self.welcome_channels.items()},
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        save_id_map(DATA_FILE, self.welcome_channels)
 
     def _get_channel(self, guild: discord.Guild) -> discord.abc.Messageable | None:
         channel_id = self.welcome_channels.get(guild.id)
