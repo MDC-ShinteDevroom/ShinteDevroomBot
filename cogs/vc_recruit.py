@@ -9,6 +9,8 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
+from utils.json_store import load_id_map, save_id_map
+
 logger = logging.getLogger("bot.vc_recruit")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -143,26 +145,10 @@ class VCRecruit(commands.Cog):
 
     # ---------------- データ永続化 ----------------
     def _load_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        self.vc_channels = load_id_map(CHANNELS_FILE)
 
-        if CHANNELS_FILE.exists():
-            try:
-                raw = json.loads(CHANNELS_FILE.read_text(encoding="utf-8"))
-                self.vc_channels = {int(k): int(v) for k, v in raw.items()}
-            except Exception:
-                logger.exception("vc_channels.json の読み込みに失敗しました")
-                self.vc_channels = {}
-
-    def _save_channels(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        CHANNELS_FILE.write_text(
-            json.dumps(
-                {str(k): v for k, v in self.vc_channels.items()},
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+    def _save_data(self):
+        save_id_map(CHANNELS_FILE, self.vc_channels)
 
     # ---------------- ボタン再送信 ----------------
     async def _repost_button(self, channel: discord.TextChannel):
@@ -192,7 +178,7 @@ class VCRecruit(commands.Cog):
                 return
 
             self.vc_channels[channel.id] = new_message.id
-            self._save_channels()
+            self._save_data()
 
     # ---------------- コマンド ----------------
     @commands.command(name="vbchannel")

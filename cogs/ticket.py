@@ -8,6 +8,8 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
+from utils.json_store import load_id_map, save_id_map
+
 logger = logging.getLogger("bot.ticket")
 
 # チケットチャンネルを作成するカテゴリのID（ここを書き換えてください）
@@ -95,25 +97,10 @@ class Ticket(commands.Cog):
 
     # ---------------- データ永続化 ----------------
     def _load_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        if DATA_FILE.exists():
-            try:
-                raw = json.loads(DATA_FILE.read_text(encoding="utf-8"))
-                self.ticket_creators = {int(k): int(v) for k, v in raw.items()}
-            except Exception:
-                logger.exception("ticket_channels.json の読み込みに失敗しました")
-                self.ticket_creators = {}
+        self.ticket_creators = load_id_map(DATA_FILE)
 
     def _save_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        DATA_FILE.write_text(
-            json.dumps(
-                {str(k): v for k, v in self.ticket_creators.items()},
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        save_id_map(DATA_FILE, self.ticket_creators)
 
     # ---------------- チケット作成処理 ----------------
     async def create_ticket_channel(self, interaction: discord.Interaction):

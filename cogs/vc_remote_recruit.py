@@ -8,7 +8,7 @@ from discord.ext import commands
 logger = logging.getLogger("bot.vc_remote_recruit")
 
 # vc_recruit.py と同じ値にしよ。　これ同期したりできないのかな、引っ張ったりしたり。
-VC_ROLE_ID = 0000000000000000000 
+VC_ROLE_ID = 0000000000000000000
 VC_CHECK_CHANNEL_IDS = [0000000000000000000, 0000000000000000000]
 COOLDOWN_SECONDS = 60
 

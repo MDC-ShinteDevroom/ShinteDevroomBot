@@ -8,6 +8,8 @@ from pathlib import Path
 import discord
 from discord.ext import commands
 
+from utils.json_store import load_id_map, save_id_map
+
 logger = logging.getLogger("bot.greet")
 
 # 設定の保存先（channel_id: 現在のボタンメッセージID）
@@ -111,25 +113,10 @@ class Greet(commands.Cog):
 
     # ---------------- データ永続化 ----------------
     def _load_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        if DATA_FILE.exists():
-            try:
-                raw = json.loads(DATA_FILE.read_text(encoding="utf-8"))
-                self.greet_channels = {int(k): int(v) for k, v in raw.items()}
-            except Exception:
-                logger.exception("greet_channels.json の読み込みに失敗しました")
-                self.greet_channels = {}
+        self.greet_channels = load_id_map(DATA_FILE)
 
     def _save_data(self):
-        DATA_DIR.mkdir(parents=True, exist_ok=True)
-        DATA_FILE.write_text(
-            json.dumps(
-                {str(k): v for k, v in self.greet_channels.items()},
-                ensure_ascii=False,
-                indent=2,
-            ),
-            encoding="utf-8",
-        )
+        save_id_map(DATA_FILE, self.greet_channels)
 
     # ---------------- ボタン再送信 ----------------
     async def _repost_button(self, channel: discord.TextChannel):
