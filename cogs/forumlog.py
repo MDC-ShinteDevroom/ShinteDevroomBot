@@ -7,7 +7,7 @@ from discord.ext import commands
 
 logger = logging.getLogger("bot.forumlog")
 
-# json作る。あとで誰かdata.jsonに移行してくれない？
+# json作る。
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "forumlog.json"
 
 class ForumLog(commands.Cog):
