@@ -27,6 +27,9 @@ PUBLIC_COMMANDS = {
     "nowplaying",
 }
 
+# プレフィックスに ! ではなく % を使うコマンド名（先頭一致）
+PERCENT_PREFIX_COMMANDS = ("toban", "purge")
+
 # ログ設定
 logging.basicConfig(
     level=logging.INFO,
@@ -47,8 +50,8 @@ async def admin_only_check(ctx: commands.Context) -> bool:
 
 
 def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
-    """%toban / %tobancancel のときだけ % を使い、それ以外は ! を使う"""
-    if message.content.startswith("%toban"):
+    """%toban / %purge などのときだけ % を使い、それ以外は ! を使う"""
+    if message.content.startswith(tuple("%" + name for name in PERCENT_PREFIX_COMMANDS)):
         return "%"
     return COMMAND_PREFIX
 
@@ -110,6 +113,9 @@ class MyBot(commands.Bot):
             return
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send(f"引数が不足しています: `{error.param.name}`")
+            return
+        if isinstance(error, commands.BadArgument):
+            await ctx.send(f"引数が正しくありません: {error}")
             return
         if isinstance(error, commands.MissingPermissions):
             await ctx.send("このコマンドを実行するには管理者権限が必要です。")
