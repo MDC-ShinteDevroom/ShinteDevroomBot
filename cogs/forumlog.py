@@ -59,6 +59,12 @@ class ForumLog(commands.Cog):
                 logger.warning(f"通知先チャンネルが見つかりません: {channel_id}")
                 return
 
+        if not isinstance(channel, discord.abc.Messageable):
+            logger.warning(
+                f"通知先チャンネルはメッセージを送信できません: {channel_id}"
+            )
+            return
+
         owner = thread.owner
         if owner is None and thread.owner_id:
             try:
@@ -95,6 +101,7 @@ class ForumLog(commands.Cog):
 
     @forumlog.command(name="set")
     async def set_channel(self, ctx: commands.Context, channel: discord.TextChannel):
+        assert ctx.guild is not None
 
         self._conf(ctx.guild.id)["log_channel"] = channel.id
         self._save()
@@ -102,6 +109,7 @@ class ForumLog(commands.Cog):
 
     @forumlog.command(name="add")
     async def add_forum(self, ctx: commands.Context, forum: discord.ForumChannel):
+        assert ctx.guild is not None
 
         forums = self._conf(ctx.guild.id)["forums"]
         if forum.id in forums:
@@ -113,6 +121,7 @@ class ForumLog(commands.Cog):
 
     @forumlog.command(name="remove")
     async def remove_forum(self, ctx: commands.Context, forum: discord.ForumChannel):
+        assert ctx.guild is not None
 
         forums = self._conf(ctx.guild.id)["forums"]
         if forum.id not in forums:
@@ -125,6 +134,8 @@ class ForumLog(commands.Cog):
     @forumlog.command(name="show")
     async def show(self, ctx: commands.Context):
         """現在の設定を表示する"""
+        assert ctx.guild is not None
+
         conf = self.config.get(str(ctx.guild.id))
         if not conf:
             await ctx.send(
@@ -139,6 +150,7 @@ class ForumLog(commands.Cog):
 
     @forumlog.command(name="off")
     async def disable(self, ctx: commands.Context):
+        assert ctx.guild is not None
 
         self.config.pop(str(ctx.guild.id), None)
         self._save()

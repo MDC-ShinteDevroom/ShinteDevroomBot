@@ -34,6 +34,9 @@ class AnonThread(commands.Cog):
         title: app_commands.Range[str, 1, 100],
         description: app_commands.Range[str, 1, 2000],
     ):
+        assert interaction.guild is not None
+        assert isinstance(interaction.user, discord.Member)
+
         title = title.strip()
         description = description.strip()
         if not title or not description:

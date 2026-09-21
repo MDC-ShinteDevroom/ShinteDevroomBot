@@ -128,14 +128,21 @@ class Toban(commands.Cog):
         self.pending.pop(key, None)
         self._save()
 
-        channel = guild.get_channel_or_thread(entry.get("channel_id") or 0)
-        if channel:
-            try:
-                await channel.send(
-                    result, allowed_mentions=discord.AllowedMentions.none()
-                )
-            except discord.HTTPException:
-                pass
+        channel_id = entry.get("channel_id")
+        if channel_id is None:
+            return
+
+        channel = guild.get_channel_or_thread(channel_id)
+        if not isinstance(channel, discord.abc.Messageable):
+            return
+
+        try:
+            await channel.send(
+                result,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+        except discord.HTTPException:
+            logger.exception(f"チャンネルへの送信に失敗しました: {channel_id}")
 
     @commands.command(name="toban")
     @commands.guild_only()
@@ -149,6 +156,10 @@ class Toban(commands.Cog):
         reason: str,
     ):
         """指定時間タイムアウト後にBANする（例: %toban @user 1h30m 荒らし行為）"""
+        assert ctx.guild is not None
+        assert isinstance(ctx.author, discord.Member)
+        assert self.bot.user is not None
+
         # % 以外（!toban など）では動作させない
         if ctx.prefix != TOBAN_PREFIX:
             return
@@ -239,6 +250,8 @@ class Toban(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def tobancancel(self, ctx: commands.Context, user: discord.User):
         """予約中のBANを取り消し、タイムアウトも解除する"""
+        assert ctx.guild is not None
+
         # % 以外（!tobancancel など）では動作させない
         if ctx.prefix != TOBAN_PREFIX:
             return

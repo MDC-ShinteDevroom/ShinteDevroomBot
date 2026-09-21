@@ -32,9 +32,20 @@ class Purge(commands.Cog):
         self,
         ctx: commands.Context,
         number: int,
-        user: discord.User = None,
+        user: discord.User | None = None,
     ):
         """メッセージを削除する（例: %purge 10 / %purge 10 @user / %purge 10 123456789012345678）"""
+        assert ctx.guild is not None
+        assert isinstance(
+            ctx.channel,
+            (
+                discord.TextChannel,
+                discord.Thread,
+                discord.VoiceChannel,
+                discord.StageChannel,
+            ),
+        )
+
         # % 以外（!purge など）では動作させない
         if ctx.prefix != PURGE_PREFIX:
             return
