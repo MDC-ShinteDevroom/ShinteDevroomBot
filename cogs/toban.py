@@ -45,7 +45,6 @@ class Toban(commands.Cog):
         self.pending: dict[str, dict] = {}
         self.tasks: dict[str, asyncio.Task] = {}
 
-
     async def cog_load(self):
         self.pending = self._load()
         for key in list(self.pending):
@@ -117,7 +116,9 @@ class Toban(commands.Cog):
                 reason=f"toban: {entry['reason']}"[:512],
                 delete_message_seconds=0,  # メッセージは削除しない
             )
-            result = f"<@{user_id}> (ID: {user_id}) をBANしました。\n理由: {entry['reason']}"
+            result = (
+                f"<@{user_id}> (ID: {user_id}) をBANしました。\n理由: {entry['reason']}"
+            )
         except discord.Forbidden:
             result = f"<@{user_id}> (ID: {user_id}) のBANに失敗しました。Botの権限または役職の順位を確認してください。"
         except discord.HTTPException:
@@ -135,7 +136,6 @@ class Toban(commands.Cog):
                 )
             except discord.HTTPException:
                 pass
-
 
     @commands.command(name="toban")
     @commands.guild_only()
@@ -175,15 +175,21 @@ class Toban(commands.Cog):
             await ctx.send("管理者権限を持つメンバーは対象にできません。")
             return
         if ctx.author.id != guild.owner_id and member.top_role >= ctx.author.top_role:
-            await ctx.send("自分より上位（または同じ）役職のメンバーは対象にできません。")
+            await ctx.send(
+                "自分より上位（または同じ）役職のメンバーは対象にできません。"
+            )
             return
         if member.top_role >= me.top_role:
-            await ctx.send("Botの役職より上位（または同じ）のメンバーは対象にできません。")
+            await ctx.send(
+                "Botの役職より上位（または同じ）のメンバーは対象にできません。"
+            )
             return
 
         perms = me.guild_permissions
         if not (perms.moderate_members and perms.ban_members):
-            await ctx.send("Botに「メンバーをタイムアウト」と「メンバーをBAN」の権限が必要です。")
+            await ctx.send(
+                "Botに「メンバーをタイムアウト」と「メンバーをBAN」の権限が必要です。"
+            )
             return
 
         key = f"{guild.id}:{member.id}"
@@ -251,7 +257,9 @@ class Toban(commands.Cog):
         member = ctx.guild.get_member(user.id)
         if member:
             try:
-                await member.timeout(None, reason=f"toban取り消し (実行者: {ctx.author})")
+                await member.timeout(
+                    None, reason=f"toban取り消し (実行者: {ctx.author})"
+                )
             except discord.HTTPException:
                 pass
 

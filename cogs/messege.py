@@ -35,7 +35,10 @@ class MessegeModal(discord.ui.Modal, title="メッセージ送信"):
 
     async def on_submit(self, interaction: discord.Interaction):
         # 念のため、送信時にも管理者かどうかを再確認する
-        if interaction.guild is None or not interaction.user.guild_permissions.administrator:
+        if (
+            interaction.guild is None
+            or not interaction.user.guild_permissions.administrator
+        ):
             await interaction.response.send_message(
                 "このコマンドは管理者のみ使用できます。", ephemeral=True
             )
@@ -46,7 +49,9 @@ class MessegeModal(discord.ui.Modal, title="メッセージ送信"):
 
         text = self.content.value
         if not text.strip():
-            await interaction.followup.send("メッセージを入力してください。", ephemeral=True)
+            await interaction.followup.send(
+                "メッセージを入力してください。", ephemeral=True
+            )
             return
 
         # URL からチャンネルIDを取り出す

@@ -51,7 +51,9 @@ async def admin_only_check(ctx: commands.Context) -> bool:
 
 def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
     """%toban / %purge などのときだけ % を使い、それ以外は ! を使う"""
-    if message.content.startswith(tuple("%" + name for name in PERCENT_PREFIX_COMMANDS)):
+    if message.content.startswith(
+        tuple("%" + name for name in PERCENT_PREFIX_COMMANDS)
+    ):
         return "%"
     return COMMAND_PREFIX
 

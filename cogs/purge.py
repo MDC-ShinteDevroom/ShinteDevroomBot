@@ -109,7 +109,9 @@ class Purge(commands.Cog):
         if user is not None:
             text = f"{user.mention} のメッセージを{deleted}件削除しました。"
             if deleted < number:
-                text += f"\n（直近{SCAN_LIMIT}件の範囲では、該当が{deleted}件のみでした）"
+                text += (
+                    f"\n（直近{SCAN_LIMIT}件の範囲では、該当が{deleted}件のみでした）"
+                )
 
         await ctx.send(
             text,
