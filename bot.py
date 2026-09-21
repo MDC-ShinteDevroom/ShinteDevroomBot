@@ -46,6 +46,13 @@ async def admin_only_check(ctx: commands.Context) -> bool:
     raise commands.MissingPermissions(["administrator"])
 
 
+def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
+    """%toban / %tobancancel のときだけ % を使い、それ以外は ! を使う"""
+    if message.content.startswith("%toban"):
+        return "%"
+    return COMMAND_PREFIX
+
+
 class MyBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -53,7 +60,7 @@ class MyBot(commands.Bot):
         intents.members = True  # メンバー情報を使う場合
 
         super().__init__(
-            command_prefix=COMMAND_PREFIX,
+            command_prefix=get_prefix,
             intents=intents,
             help_command=commands.DefaultHelpCommand(),
         )
