@@ -9,7 +9,7 @@ logger = logging.getLogger("bot.vc_remote_recruit")
 
 # vc_recruit.py と同じ値にしよ。　これ同期したりできないのかな、引っ張ったりしたり。
 VC_ROLE_ID = 1511613354987225208
-VC_CHECK_CHANNEL_IDS = [0000000000000000000, 0000000000000000000]
+VC_CHECK_CHANNEL_IDS = [1459083568339751089, 1459083437615878145]
 COOLDOWN_SECONDS = 60
 
 # {user_id(int): 最後に募集した時刻(time.monotonic())}
