@@ -31,11 +31,16 @@ class Welcome(commands.Cog):
     def _save_data(self):
         save_id_map(DATA_FILE, self.welcome_channels)
 
-    def _get_channel(self, guild: discord.Guild) -> discord.abc.Messageable | None:
+    def _get_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
         channel_id = self.welcome_channels.get(guild.id)
         if channel_id is None:
             return None
-        return guild.get_channel(channel_id)
+
+        channel = guild.get_channel(channel_id)
+        if isinstance(channel, discord.TextChannel):
+            return channel
+
+        return None
 
     # ---------------- コマンド ----------------
     @commands.command(name="welcomechannel")
@@ -43,6 +48,8 @@ class Welcome(commands.Cog):
     @commands.guild_only()
     async def welcomechannel(self, ctx: commands.Context):
         """このチャンネルを入退室通知チャンネルに設定する"""
+        assert ctx.guild is not None
+
         self.welcome_channels[ctx.guild.id] = ctx.channel.id
         self._save_data()
 
