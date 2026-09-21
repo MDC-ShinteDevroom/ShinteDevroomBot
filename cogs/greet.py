@@ -35,6 +35,9 @@ class IntroModal(discord.ui.Modal, title="自己紹介"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
+        assert interaction.guild is not None
+        assert isinstance(interaction.channel, discord.TextChannel)
+
         embed = discord.Embed(
             description=self.intro.value,
             color=discord.Color.blurple(),
@@ -155,6 +158,9 @@ class Greet(commands.Cog):
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def greetchannel(self, ctx: commands.Context):
+        if not isinstance(ctx.channel, discord.TextChannel):
+            return
+
         await self._repost_button(ctx.channel)
 
     @greetchannel.error
@@ -176,6 +182,9 @@ class Greet(commands.Cog):
 
         # 直前に送ったボタン自体のメッセージなら無視（無限ループ防止）
         if message.id == self.greet_channels.get(message.channel.id):
+            return
+
+        if not isinstance(message.channel, discord.TextChannel):
             return
 
         await self._repost_button(message.channel)
