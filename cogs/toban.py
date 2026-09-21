@@ -45,7 +45,6 @@ class Toban(commands.Cog):
         self.pending: dict[str, dict] = {}
         self.tasks: dict[str, asyncio.Task] = {}
 
-
     async def cog_load(self):
         self.pending = self._load()
         for key in list(self.pending):
@@ -117,7 +116,9 @@ class Toban(commands.Cog):
                 reason=f"toban: {entry['reason']}"[:512],
                 delete_message_seconds=0,  # メッセージは削除しない
             )
-            result = f"<@{user_id}> (ID: {user_id}) をBANしました。\n理由: {entry['reason']}"
+            result = (
+                f"<@{user_id}> (ID: {user_id}) をBANしました。\n理由: {entry['reason']}"
+            )
         except discord.Forbidden:
             result = f"<@{user_id}> (ID: {user_id}) のBANに失敗しました。Botの権限または役職の順位を確認してください。"
         except discord.HTTPException:
@@ -127,15 +128,21 @@ class Toban(commands.Cog):
         self.pending.pop(key, None)
         self._save()
 
-        channel = guild.get_channel_or_thread(entry.get("channel_id") or 0)
-        if channel:
-            try:
-                await channel.send(
-                    result, allowed_mentions=discord.AllowedMentions.none()
-                )
-            except discord.HTTPException:
-                pass
+        channel_id = entry.get("channel_id")
+        if channel_id is None:
+            return
 
+        channel = guild.get_channel_or_thread(channel_id)
+        if not isinstance(channel, discord.abc.Messageable):
+            return
+
+        try:
+            await channel.send(
+                result,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+        except discord.HTTPException:
+            logger.exception(f"チャンネルへの送信に失敗しました: {channel_id}")
 
     @commands.command(name="toban")
     @commands.guild_only()
@@ -149,6 +156,10 @@ class Toban(commands.Cog):
         reason: str,
     ):
         """指定時間タイムアウト後にBANする（例: %toban @user 1h30m 荒らし行為）"""
+        assert ctx.guild is not None
+        assert isinstance(ctx.author, discord.Member)
+        assert self.bot.user is not None
+
         # % 以外（!toban など）では動作させない
         if ctx.prefix != TOBAN_PREFIX:
             return
@@ -175,15 +186,21 @@ class Toban(commands.Cog):
             await ctx.send("管理者権限を持つメンバーは対象にできません。")
             return
         if ctx.author.id != guild.owner_id and member.top_role >= ctx.author.top_role:
-            await ctx.send("自分より上位（または同じ）役職のメンバーは対象にできません。")
+            await ctx.send(
+                "自分より上位（または同じ）役職のメンバーは対象にできません。"
+            )
             return
         if member.top_role >= me.top_role:
-            await ctx.send("Botの役職より上位（または同じ）のメンバーは対象にできません。")
+            await ctx.send(
+                "Botの役職より上位（または同じ）のメンバーは対象にできません。"
+            )
             return
 
         perms = me.guild_permissions
         if not (perms.moderate_members and perms.ban_members):
-            await ctx.send("Botに「メンバーをタイムアウト」と「メンバーをBAN」の権限が必要です。")
+            await ctx.send(
+                "Botに「メンバーをタイムアウト」と「メンバーをBAN」の権限が必要です。"
+            )
             return
 
         key = f"{guild.id}:{member.id}"
@@ -233,6 +250,8 @@ class Toban(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def tobancancel(self, ctx: commands.Context, user: discord.User):
         """予約中のBANを取り消し、タイムアウトも解除する"""
+        assert ctx.guild is not None
+
         # % 以外（!tobancancel など）では動作させない
         if ctx.prefix != TOBAN_PREFIX:
             return
@@ -251,7 +270,9 @@ class Toban(commands.Cog):
         member = ctx.guild.get_member(user.id)
         if member:
             try:
-                await member.timeout(None, reason=f"toban取り消し (実行者: {ctx.author})")
+                await member.timeout(
+                    None, reason=f"toban取り消し (実行者: {ctx.author})"
+                )
             except discord.HTTPException:
                 pass
 

@@ -34,6 +34,8 @@ class VCRemoteRecruit(commands.Cog):
         reason: app_commands.Range[str, 1, 500],
         notifications: bool = False,
     ):
+        assert interaction.guild is not None
+
         channel = interaction.channel
         if channel is None or not isinstance(channel, discord.abc.Messageable):
             await interaction.response.send_message(

@@ -44,6 +44,9 @@ class RecruitModal(discord.ui.Modal, title="VC募集"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
+        assert interaction.guild is not None
+        assert isinstance(interaction.channel, discord.TextChannel)
+
         role = interaction.guild.get_role(VC_ROLE_ID)
 
         if role is None:
@@ -186,6 +189,9 @@ class VCRecruit(commands.Cog):
     @commands.guild_only()
     async def vbchannel(self, ctx: commands.Context):
         """このチャンネルをVC募集チャンネルに設定する"""
+        if not isinstance(ctx.channel, discord.TextChannel):
+            return
+
         await self._repost_button(ctx.channel)
 
     @vbchannel.error
@@ -207,6 +213,9 @@ class VCRecruit(commands.Cog):
 
         # 直前に送ったボタン自体のメッセージなら無視（無限ループ防止）
         if message.id == self.vc_channels.get(message.channel.id):
+            return
+
+        if not isinstance(message.channel, discord.TextChannel):
             return
 
         await self._repost_button(message.channel)
