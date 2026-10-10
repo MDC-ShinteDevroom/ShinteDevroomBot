@@ -12,12 +12,16 @@ from discord.ext import commands
 logger = logging.getLogger("bot.katm")
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "katm.json"
+LOCKS_PATH = Path(__file__).resolve().parent.parent / "data" / "katm_locks.json"
 
 # このコマンドで使うプレフィックス（bot.py の get_prefix と合わせる）
-KATM_PREFIX = "%"
+KATM_PREFIX = ","
 
 # BAN までの待機時間（秒）
 DELAY_SECONDS = 10 * 60
+
+# BAN 後、解除を保護する時間（秒）
+UNBAN_LOCK_SECONDS = 10 * 60 * 60
 
 
 class Katm(commands.Cog):
@@ -28,6 +32,8 @@ class Katm(commands.Cog):
         # {"guild_id:user_id": {guild_id, user_id, ban_at, channel_id, moderator_id}}
         self.pending: dict[str, dict] = {}
         self.tasks: dict[str, asyncio.Task] = {}
+        # {"guild_id:user_id": {guild_id, user_id, unlock_at, channel_id}}
+        self.locks: dict[str, dict] = {}
 
     # ---------- ライフサイクル ----------
 
@@ -35,6 +41,15 @@ class Katm(commands.Cog):
         self.pending = self._load()
         for key in list(self.pending):
             self._schedule(key)
+
+        self.locks = self._load_locks()
+        # 期限切れの記録は起動時に掃除しておく
+        now = time.time()
+        expired = [k for k, v in self.locks.items() if v["unlock_at"] <= now]
+        if expired:
+            for k in expired:
+                self.locks.pop(k, None)
+            self._save_locks()
 
     async def cog_unload(self):
         for task in self.tasks.values():
@@ -55,6 +70,20 @@ class Katm(commands.Cog):
         DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
         DATA_PATH.write_text(
             json.dumps(self.pending, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+    def _load_locks(self) -> dict:
+        if LOCKS_PATH.exists():
+            try:
+                return json.loads(LOCKS_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                logger.exception("katm_locks.json の読み込みに失敗しました")
+        return {}
+
+    def _save_locks(self) -> None:
+        LOCKS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        LOCKS_PATH.write_text(
+            json.dumps(self.locks, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
     # ---------- BAN の予約と実行 ----------
@@ -121,6 +150,16 @@ class Katm(commands.Cog):
                 delete_message_seconds=0,  # メッセージは削除しない
             )
             result = f"<@{user_id}> (ID: {user_id}) をBANしました。"
+
+            # 一定時間、解除されても即座に再BANするよう記録する
+            unlock_at = time.time() + UNBAN_LOCK_SECONDS
+            self.locks[key] = {
+                "guild_id": guild.id,
+                "user_id": user_id,
+                "unlock_at": unlock_at,
+                "channel_id": entry.get("channel_id"),
+            }
+            self._save_locks()
         except discord.Forbidden:
             result = f"<@{user_id}> (ID: {user_id}) のBANに失敗しました。Botの権限を確認してください。"
         except discord.HTTPException:
@@ -141,14 +180,56 @@ class Katm(commands.Cog):
             except discord.HTTPException:
                 pass
 
+    # ---------- BAN解除の保護 ----------
+
+    @commands.Cog.listener()
+    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+        key = f"{guild.id}:{user.id}"
+        lock = self.locks.get(key)
+        if not lock:
+            return
+
+        if time.time() >= lock["unlock_at"]:
+            # 保護期間は終了しているので、記録だけ削除する
+            self.locks.pop(key, None)
+            self._save_locks()
+            return
+
+        # 保護期間中に解除されたので、即座に再BANする
+        try:
+            await guild.ban(
+                discord.Object(id=user.id),
+                reason="katm: 解除保護期間中のため再BAN",
+                delete_message_seconds=0,
+            )
+            unlock_ts = int(lock["unlock_at"])
+            text = (
+                f"<@{user.id}> (ID: {user.id}) のBAN解除を検知しましたが、"
+                f"保護期間中のため再度BANしました。解除可能になる時刻: <t:{unlock_ts}:f>"
+            )
+        except discord.Forbidden:
+            text = f"<@{user.id}> (ID: {user.id}) の再BANに失敗しました。Botの権限を確認してください。"
+        except discord.HTTPException:
+            logger.exception("再BAN に失敗しました")
+            text = f"<@{user.id}> (ID: {user.id}) の再BANに失敗しました。"
+
+        channel = guild.get_channel_or_thread(lock.get("channel_id") or 0)
+        if channel:
+            try:
+                await channel.send(
+                    text, allowed_mentions=discord.AllowedMentions.none()
+                )
+            except discord.HTTPException:
+                pass
+
     # ---------- コマンド ----------
 
     @commands.command(name="katm")
     @commands.guild_only()
     @commands.has_permissions(administrator=True)
     async def katm(self, ctx: commands.Context, user: discord.User):
-        """10分後にサイレントBANを予約する（例: %katm @user / %katm 123456789012345678）"""
-        # % 以外（!katm など）では動作させない
+        """10分後にサイレントBANを予約する（例: ,katm @user / ,katm 123456789012345678）"""
+        # , 以外（!katm など）では動作させない
         if ctx.prefix != KATM_PREFIX:
             return
 
@@ -200,11 +281,7 @@ class Katm(commands.Cog):
         self._schedule(key)
 
         ts = int(ban_at)
-        await ctx.send(
-            f"{user.mention} を10分後にBANする予約をしました。\n"
-            f"BAN予定: <t:{ts}:F>（<t:{ts}:R>）",
-            allowed_mentions=discord.AllowedMentions.none(),
-        )
+        await ctx.send(f"<t:{ts}:R>", allowed_mentions=discord.AllowedMentions.none())
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Katm(bot))
