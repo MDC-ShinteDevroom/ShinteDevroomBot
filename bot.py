@@ -13,7 +13,9 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 COMMAND_PREFIX = os.getenv("COMMAND_PREFIX", "!")
 COGS_DIR = Path(__file__).parent / "cogs"
 
-# 管理者権限チェックの対象外にする（誰でも実行可能な）コマンド名
+# 管理者権限チェックの対象外にするコマンド名。
+# 基本は「誰でも実行可能」にするためのものだが、katm のように
+# コマンド側で独自の（より厳しい）権限チェックを持つものもここに含める。
 PUBLIC_COMMANDS = {
     "gr3nja",
     "join",
@@ -25,6 +27,7 @@ PUBLIC_COMMANDS = {
     "stop",
     "queue",
     "nowplaying",
+    "katm",  # 実行者は katm.py 側で KATM_USER_ID のみに制限
 }
 
 # ! 以外のプレフィックスを使うコマンド名（先頭一致）。
@@ -125,6 +128,10 @@ class MyBot(commands.Bot):
             return
         if isinstance(error, commands.MissingPermissions):
             await ctx.send("このコマンドを実行するには管理者権限が必要です。")
+            return
+        if isinstance(error, commands.CheckFailure):
+            # has_permissions 以外の独自チェック（katm の実行者制限など）で弾かれた場合
+            await ctx.send(str(error) or "このコマンドを実行する権限がありません。")
             return
 
         logger.exception("コマンド実行中にエラーが発生しました", exc_info=error)
