@@ -28,7 +28,7 @@ PUBLIC_COMMANDS = {
 }
 
 # プレフィックスに ! ではなく % を使うコマンド名（先頭一致）
-PERCENT_PREFIX_COMMANDS = ("toban", "purge")
+PERCENT_PREFIX_COMMANDS = ("toban", "purge", "katm")
 
 # ログ設定
 logging.basicConfig(
