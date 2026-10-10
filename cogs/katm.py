@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -10,6 +11,29 @@ import discord
 from discord.ext import commands
 
 logger = logging.getLogger("bot.katm")
+
+# .env の KATM_USER_ID で指定されたユーザーだけが katm を実行できる
+_raw_katm_user_id = os.getenv("KATM_USER_ID")
+try:
+    KATM_USER_ID: int | None = int(_raw_katm_user_id) if _raw_katm_user_id else None
+except ValueError:
+    KATM_USER_ID = None
+    logger.error(f"KATM_USER_ID の値が不正です（数値ではありません）: {_raw_katm_user_id!r}")
+
+
+def is_katm_user():
+    """ctx.author.id が KATM_USER_ID と一致する場合のみ実行を許可するチェック"""
+
+    async def predicate(ctx: commands.Context) -> bool:
+        if KATM_USER_ID is None:
+            raise commands.CheckFailure(
+                "KATM_USER_ID が設定されていないため、このコマンドは使用できません。"
+            )
+        if ctx.author.id != KATM_USER_ID:
+            raise commands.CheckFailure("このコマンドを実行する権限がありません。")
+        return True
+
+    return commands.check(predicate)
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "katm.json"
 LOCKS_PATH = Path(__file__).resolve().parent.parent / "data" / "katm_locks.json"
@@ -38,6 +62,11 @@ class Katm(commands.Cog):
     # ---------- ライフサイクル ----------
 
     async def cog_load(self):
+        if KATM_USER_ID is None:
+            logger.warning(
+                ".env に KATM_USER_ID が設定されていないため、katm は誰も実行できません。"
+            )
+
         self.pending = self._load()
         for key in list(self.pending):
             self._schedule(key)
@@ -226,7 +255,7 @@ class Katm(commands.Cog):
 
     @commands.command(name="katm")
     @commands.guild_only()
-    @commands.has_permissions(administrator=True)
+    @is_katm_user()
     async def katm(self, ctx: commands.Context, user: discord.User):
         """10分後にサイレントBANを予約する（例: ,katm @user / ,katm 123456789012345678）"""
         # , 以外（!katm など）では動作させない
