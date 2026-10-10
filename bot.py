@@ -27,8 +27,12 @@ PUBLIC_COMMANDS = {
     "nowplaying",
 }
 
-# プレフィックスに ! ではなく % を使うコマンド名（先頭一致）
-PERCENT_PREFIX_COMMANDS = ("toban", "purge", "katm")
+# ! 以外のプレフィックスを使うコマンド名（先頭一致）。
+# プレフィックス文字列 -> そのプレフィックスを使うコマンド名のタプル
+CUSTOM_PREFIX_COMMANDS: dict[str, tuple[str, ...]] = {
+    "%": ("toban", "purge"),
+    ",": ("katm",),
+}
 
 # ログ設定
 logging.basicConfig(
@@ -50,9 +54,11 @@ async def admin_only_check(ctx: commands.Context) -> bool:
 
 
 def get_prefix(bot: commands.Bot, message: discord.Message) -> str:
-    """%toban / %purge などのときだけ % を使い、それ以外は ! を使う"""
-    if message.content.startswith(tuple("%" + name for name in PERCENT_PREFIX_COMMANDS)):
-        return "%"
+    """CUSTOM_PREFIX_COMMANDS に登録されたコマンドだけ専用プレフィックスを使い、それ以外は ! を使う"""
+    content = message.content
+    for prefix, names in CUSTOM_PREFIX_COMMANDS.items():
+        if content.startswith(tuple(prefix + name for name in names)):
+            return prefix
     return COMMAND_PREFIX
 
 
